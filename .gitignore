@@ -1,0 +1,13 @@
+.vscode
+*.iml
+.idea
+.DS_Store
+bin/
+vendor/
+
+script/
+.log
+.pprof
+tests/
+.dev/
+gen/

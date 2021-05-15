@@ -6,6 +6,7 @@ require (
 	git.internal.yunify.com/MDMP2/api v0.0.2
 	git.internal.yunify.com/MDMP2/ruleql v0.0.0-20210119035814-392f9055bb51
 	github.com/Jeffail/gabs v1.4.0
+	github.com/Workiva/go-datastructures v1.0.53
 	github.com/a8m/djson v0.0.0-20170509170705-c02c5aef757f
 	github.com/antonholmquist/jason v1.0.0
 	github.com/bitly/go-simplejson v0.5.0

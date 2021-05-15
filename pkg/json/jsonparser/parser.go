@@ -304,7 +304,7 @@ func searchKeys(data []byte, keys ...string) int {
 				var valueFound []byte
 				var valueOffset int
 				var curI = i
-				ArrayEach(data[i:], func(value []byte, dataType ValueType, offset int, err error) {
+				ArrayEach(data[i:], func(value []byte, dataType ValueType, offset int) error {
 					if curIdx == aIdx {
 						valueFound = value
 						valueOffset = offset
@@ -314,6 +314,7 @@ func searchKeys(data []byte, keys ...string) int {
 						}
 					}
 					curIdx += 1
+					return nil
 				})
 
 				if valueFound == nil {
@@ -496,7 +497,7 @@ func EachKey(data []byte, cb func(int, []byte, ValueType, error), paths ...[]str
 				level++
 
 				var curIdx int
-				arrOff, _ := ArrayEach(data[i:], func(value []byte, dataType ValueType, offset int, err error) {
+				arrOff, _ := ArrayEach(data[i:], func(value []byte, dataType ValueType, offset int) error {
 					if arrIdxFlags&bitwiseFlags[curIdx+1] != 0 {
 						for pi, p := range paths {
 							if pIdxFlags&bitwiseFlags[pi+1] != 0 {
@@ -518,6 +519,7 @@ func EachKey(data []byte, cb func(int, []byte, ValueType, error), paths ...[]str
 					}
 
 					curIdx += 1
+					return nil
 				})
 
 				if pathsMatched == len(paths) {
@@ -587,6 +589,7 @@ var (
 func createInsertComponent(keys []string, setValue []byte, comma, object bool) []byte {
 	var buffer bytes.Buffer
 	isIndex := string(keys[0][0]) == "["
+	isString := string(keys[0][0]) == "\""
 	if comma {
 		buffer.WriteString(",")
 	}
@@ -596,18 +599,27 @@ func createInsertComponent(keys []string, setValue []byte, comma, object bool) [
 		if object {
 			buffer.WriteString("{")
 		}
-		buffer.WriteString("\"")
-		buffer.WriteString(keys[0])
-		buffer.WriteString("\":")
+		if isString {
+			buffer.WriteString(keys[0])
+			buffer.WriteString(":")
+		} else {
+			buffer.WriteString("\"")
+			buffer.WriteString(keys[0])
+			buffer.WriteString("\":")
+		}
 	}
 
 	for i := 1; i < len(keys); i++ {
 		if string(keys[i][0]) == "[" {
 			buffer.WriteString("[")
-		} else {
-			buffer.WriteString("{\"")
-			buffer.WriteString(keys[i])
-			buffer.WriteString("\":")
+			if isString {
+				buffer.WriteString(keys[i])
+				buffer.WriteString(":")
+			} else {
+				buffer.WriteString("\"")
+				buffer.WriteString(keys[i])
+				buffer.WriteString("\":")
+			}
 		}
 	}
 	buffer.Write(setValue)
@@ -718,7 +730,7 @@ Returns:
 
 */
 func Set(data []byte, setValue []byte, keys ...string) (value []byte, err error) {
-	fmt.Println(string(data), string(setValue), keys)
+	//fmt.Println(string(data), string(setValue), keys)
 	// ensure keys are set
 	if len(keys) == 0 {
 		return nil, KeyPathNotFoundError
@@ -811,6 +823,9 @@ func Append(data []byte, addValue []byte, keys ...string) (value []byte, err err
 			//	[]byte("]"),
 			//}, []byte{})
 			return nil, UnknownValueTypeError
+		}
+		if len(keys) == 0 {
+			return setValue, nil
 		}
 		return Set(data, setValue, keys...)
 	}
@@ -927,7 +942,7 @@ func internalGet(data []byte, keys ...string) (value []byte, dataType ValueType,
 }
 
 // ArrayEach is used when iterating arrays, accepts a callback function with the same return arguments as `Get`.
-func ArrayEach(data []byte, cb func(value []byte, dataType ValueType, offset int, err error), keys ...string) (offset int, err error) {
+func ArrayEach(data []byte, cb func(value []byte, dataType ValueType, offset int) error, keys ...string) (offset int, err error) {
 	if len(data) == 0 {
 		return -1, MalformedObjectError
 	}
@@ -977,7 +992,7 @@ func ArrayEach(data []byte, cb func(value []byte, dataType ValueType, offset int
 		}
 
 		if t != NotExist {
-			cb(v, t, offset+o-len(v), e)
+			e = cb(v, t, offset+o-len(v))
 		}
 
 		if e != nil {

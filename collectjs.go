@@ -145,8 +145,8 @@ func (cc *Collect) GroupBy(path string) *Collect {
 }
 
 func (cc *Collect) SortBy(fn func(p1 *Collect, p2 *Collect) bool) {
-	if cc.datatype != jsonparser.Array {
-		cc.err = errors.New("datatype is not array")
+	if cc.datatype != jsonparser.Array && cc.datatype != jsonparser.Object {
+		cc.err = errors.New("datatype is not array or object")
 		return
 	}
 	carr := make([]*Collect, 0)
@@ -160,6 +160,7 @@ func (cc *Collect) SortBy(fn func(p1 *Collect, p2 *Collect) bool) {
 		ret.Append("", c.raw)
 	}
 	cc.raw = ret.raw
+	cc.datatype = ret.datatype
 }
 
 func Combine(key []byte, value []byte) []byte {

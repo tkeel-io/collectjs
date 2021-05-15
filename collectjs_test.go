@@ -194,7 +194,7 @@ func Example_Demo() {
 }
 
 func Example_Demo2() {
-	collection1 := New(`{"status":"success","data":{"resultType":"vector","result":[{"metric":{"__name__":"node_memory_MemAvailable_bytes","instance":"192.168.14.102:9100","job":"linux"},"value":[1620999810.899,"6519189504"]},{"metric":{"__name__":"node_memory_MemAvailable_bytes","instance":"192.168.14.146:9100","job":"linux"},"value":[1620999810.899,"1787977728"]},{"metric":{"__name__":"node_memory_MemAvailable_bytes","instance":"192.168.21.163:9100","job":"linux"},"value":[1620999810.899,"5775802368"]},{"metric":{"__name__":"node_memory_MemAvailable_bytes","instance":"192.168.21.174:9100","job":"linux"},"value":[1620999810.899,"19626115072"]},{"metric":{"__name__":"node_memory_MemAvailable_bytes","instance":"localhost:9100","job":"linux"},"value":[1620999810.899,"3252543488"]},{"metric":{"__name__":"node_memory_MemTotal_bytes","instance":"192.168.14.102:9100","job":"linux"},"value":[1620999810.899,"8203091968"]},{"metric":{"__name__":"node_memory_MemTotal_bytes","instance":"192.168.14.146:9100","job":"linux"},"value":[1620999810.899,"8203091968"]},{"metric":{"__name__":"node_memory_MemTotal_bytes","instance":"192.168.21.163:9100","job":"linux"},"value":[1620999810.899,"8202657792"]},{"metric":{"__name__":"node_memory_MemTotal_bytes","instance":"192.168.21.174:9100","job":"linux"},"value":[1620999810.899,"25112969216"]},{"metric":{"__name__":"node_memory_MemTotal_bytes","instance":"localhost:9100","job":"linux"},"value":[1620999810.899,"3972988928"]}]}}`)
+	collection1 := New(`{"status":"success","data":{"resultType":"vector","result":[{"metric":{"__name__":"node_memory_MemAvailable_bytes","instance":"192.168.14.102:9100","job":"linux"},"value":[1620999810.899,"1"]},{"metric":{"__name__":"node_memory_MemAvailable_bytes","instance":"192.168.14.146:9100","job":"linux"},"value":[1620999810.899,"3"]},{"metric":{"__name__":"node_memory_MemAvailable_bytes","instance":"192.168.21.163:9100","job":"linux"},"value":[1620999810.899,"2"]},{"metric":{"__name__":"node_memory_MemAvailable_bytes","instance":"192.168.21.174:9100","job":"linux"},"value":[1620999810.899,"19626115072"]},{"metric":{"__name__":"node_memory_MemAvailable_bytes","instance":"localhost:9100","job":"linux"},"value":[1620999810.899,"3252543488"]},{"metric":{"__name__":"node_memory_MemTotal_bytes","instance":"192.168.14.102:9100","job":"linux"},"value":[1620999810.899,"8203091968"]},{"metric":{"__name__":"node_memory_MemTotal_bytes","instance":"192.168.14.146:9100","job":"linux"},"value":[1620999810.899,"8203091968"]},{"metric":{"__name__":"node_memory_MemTotal_bytes","instance":"192.168.21.163:9100","job":"linux"},"value":[1620999810.899,"8202657792"]},{"metric":{"__name__":"node_memory_MemTotal_bytes","instance":"192.168.21.174:9100","job":"linux"},"value":[1620999810.899,"25112969216"]},{"metric":{"__name__":"node_memory_MemTotal_bytes","instance":"localhost:9100","job":"linux"},"value":[1620999810.899,"3972988928"]}]}}`)
 	result := collection1.Get("data.result")
 	result.Map(func(key []byte, bytes []byte) []byte {
 		val := New("{}")
@@ -208,6 +208,18 @@ func Example_Demo2() {
 	ret := MergeBy(result.raw, "instance") //node_memory_MemTotal_bytes
 	fmt.Println(string(ret))
 
+	MemAvailable := func(p1, p2 *Collect) bool {
+		return bytes.Compare(p1.Get("node_memory_MemAvailable_bytes.value").raw, p2.Get("node_memory_MemAvailable_bytes.value").raw) > 0
+	}
+	MemTotal := func(p1, p2 *Collect) bool {
+		return bytes.Compare(p1.Get("node_memory_MemTotal_bytes.value").raw, p2.Get("node_memory_MemTotal_bytes.value").raw) < 0
+	}
+
+	sorted := newCollect(ret)
+	sorted.SortBy(MemTotal)
+	fmt.Println(string(sorted.raw))
+	sorted.SortBy(MemAvailable)
+	fmt.Println(string(sorted.raw))
 
 	// Output:
 	// {"192.168.14.102:9100":[{"metric":"node_memory_MemAvailable_bytes","instance":"192.168.14.102:9100","timestamp":1620999810.899,"value":"6519189504"},{"metric":"node_memory_MemTotal_bytes","instance":"192.168.14.102:9100","timestamp":1620999810.899,"value":"8203091968"}],"192.168.14.146:9100":[{"metric":"node_memory_MemAvailable_bytes","instance":"192.168.14.146:9100","timestamp":1620999810.899,"value":"1787977728"},{"metric":"node_memory_MemTotal_bytes","instance":"192.168.14.146:9100","timestamp":1620999810.899,"value":"8203091968"}],"192.168.21.163:9100":[{"metric":"node_memory_MemAvailable_bytes","instance":"192.168.21.163:9100","timestamp":1620999810.899,"value":"5775802368"},{"metric":"node_memory_MemTotal_bytes","instance":"192.168.21.163:9100","timestamp":1620999810.899,"value":"8202657792"}],"192.168.21.174:9100":[{"metric":"node_memory_MemAvailable_bytes","instance":"192.168.21.174:9100","timestamp":1620999810.899,"value":"19626115072"},{"metric":"node_memory_MemTotal_bytes","instance":"192.168.21.174:9100","timestamp":1620999810.899,"value":"25112969216"}],"localhost:9100":[{"metric":"node_memory_MemAvailable_bytes","instance":"localhost:9100","timestamp":1620999810.899,"value":"3252543488"},{"metric":"node_memory_MemTotal_bytes","instance":"localhost:9100","timestamp":1620999810.899,"value":"3972988928"}]}

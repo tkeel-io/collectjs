@@ -718,6 +718,7 @@ Returns:
 
 */
 func Set(data []byte, setValue []byte, keys ...string) (value []byte, err error) {
+	fmt.Println(string(data), string(setValue), keys)
 	// ensure keys are set
 	if len(keys) == 0 {
 		return nil, KeyPathNotFoundError
@@ -797,7 +798,11 @@ func Append(data []byte, addValue []byte, keys ...string) (value []byte, err err
 	} else {
 		size := len(value)
 		if value[0] == []byte("[")[0] && value[size-1] == []byte("]")[0] {
-			setValue = bytes.Join([][]byte{value[1 : size-1], addValue}, []byte(","))
+			if size == 2 {
+				setValue = addValue
+			} else {
+				setValue = bytes.Join([][]byte{value[1 : size-1], addValue}, []byte(","))
+			}
 			setValue = bytes.Join([][]byte{[]byte("["), setValue, []byte("]")}, []byte{})
 		} else {
 			//setValue = bytes.Join([][]byte{

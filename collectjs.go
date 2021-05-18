@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+
 	"git.internal.yunify.com/MDMP2/collectjs/pkg/json/gjson"
 	"git.internal.yunify.com/MDMP2/collectjs/pkg/json/jsonparser"
 )
@@ -35,6 +36,10 @@ func newCollect(data []byte) *Collect {
 		collect.err = err
 		return collect
 	}
+}
+
+func (cc *Collect) GetRaw() []byte {
+	return cc.raw
 }
 
 func (cc *Collect) Get(path string) *Collect {

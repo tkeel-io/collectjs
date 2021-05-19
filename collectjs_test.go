@@ -3,9 +3,10 @@ package collectjs
 import (
 	"bytes"
 	"fmt"
-	"git.internal.yunify.com/MDMP2/collectjs/pkg/json/gjson"
 	"reflect"
 	"testing"
+
+	"git.internal.yunify.com/MDMP2/collectjs/pkg/json/gjson"
 )
 
 var raw = Byte(`{"cpu":1,"mem": ["lo0", "eth1", "eth2"],"a":[{"v":0},{"v":1},{"v":2}],"b":[{"v":{"cv":1}},{"v":{"cv":2}},{"v":{"cv":3}}],"where": 10,"metadata": {"name": "Light1", "price": 11.05}}`)
@@ -62,8 +63,7 @@ func TestCollect_Set(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cc := newCollect(raw)
 			cc.Set(tt.path, []byte(tt.value))
-			if got := cc.raw;
-				!reflect.DeepEqual(string(got), tt.want) {
+			if got := cc.raw; !reflect.DeepEqual(string(got), tt.want) {
 				t.Errorf("Get() = %v, want %v", string(got), tt.want)
 			}
 		})
@@ -89,8 +89,7 @@ func TestCollect_Append(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cc := newCollect(tt.raw)
 			cc.Append(tt.path, []byte(tt.value))
-			if got := cc.raw;
-				!reflect.DeepEqual(string(got), tt.want) {
+			if got := cc.raw; !reflect.DeepEqual(string(got), tt.want) {
 				t.Errorf("Get() = %v, want %v", string(got), tt.want)
 			}
 		})
@@ -100,20 +99,19 @@ func TestCollect_Append(t *testing.T) {
 func TestCollect_Del(t *testing.T) {
 	tests := []struct {
 		name string
-		path string
+		path []string
 		want interface{}
 	}{
-		{"2", "cpu", `{"mem": ["lo0", "eth1", "eth2"],"a":[{"v":0},{"v":1},{"v":2}],"b":[{"v":{"cv":1}},{"v":{"cv":2}},{"v":{"cv":3}}],"where": 10,"metadata": {"name": "Light1", "price": 11.05}}`},
-		{"3", "a", `{"cpu":1,"mem": ["lo0", "eth1", "eth2"],"b":[{"v":{"cv":1}},{"v":{"cv":2}},{"v":{"cv":3}}],"where": 10,"metadata": {"name": "Light1", "price": 11.05}}`},
-		{"4", "a[0]", `{"cpu":1,"mem": ["lo0", "eth1", "eth2"],"a":[{"v":1},{"v":2}],"b":[{"v":{"cv":1}},{"v":{"cv":2}},{"v":{"cv":3}}],"where": 10,"metadata": {"name": "Light1", "price": 11.05}}`},
-		{"5", "a[0].v", `{"cpu":1,"mem": ["lo0", "eth1", "eth2"],"a":[{},{"v":1},{"v":2}],"b":[{"v":{"cv":1}},{"v":{"cv":2}},{"v":{"cv":3}}],"where": 10,"metadata": {"name": "Light1", "price": 11.05}}`},
+		{"2", []string{"cpu"}, `{"mem": ["lo0", "eth1", "eth2"],"a":[{"v":0},{"v":1},{"v":2}],"b":[{"v":{"cv":1}},{"v":{"cv":2}},{"v":{"cv":3}}],"where": 10,"metadata": {"name": "Light1", "price": 11.05}}`},
+		{"3", []string{"a", "b", "cpu"}, `{"mem": ["lo0", "eth1", "eth2"],"where": 10,"metadata": {"name": "Light1", "price": 11.05}}`},
+		{"4", []string{"a[0]"}, `{"cpu":1,"mem": ["lo0", "eth1", "eth2"],"a":[{"v":1},{"v":2}],"b":[{"v":{"cv":1}},{"v":{"cv":2}},{"v":{"cv":3}}],"where": 10,"metadata": {"name": "Light1", "price": 11.05}}`},
+		{"5", []string{"a[0].v"}, `{"cpu":1,"mem": ["lo0", "eth1", "eth2"],"a":[{},{"v":1},{"v":2}],"b":[{"v":{"cv":1}},{"v":{"cv":2}},{"v":{"cv":3}}],"where": 10,"metadata": {"name": "Light1", "price": 11.05}}`},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cc := newCollect(raw)
-			cc.Del(tt.path)
-			if got := cc.raw;
-				!reflect.DeepEqual(string(got), tt.want) {
+			cc.Del(tt.path...)
+			if got := cc.raw; !reflect.DeepEqual(string(got), tt.want) {
 				t.Errorf("Get() = %v, want %v", string(got), tt.want)
 			}
 		})
@@ -141,13 +139,12 @@ func Example_GroupBy() {
 }
 
 func Example_MergeBy() {
-	ret := MergeBy(rawGroup, "manufacturer") //node_memory_MemTotal_bytes
+	ret := MergeBy(rawGroup, "product", "manufacturer") //node_memory_MemTotal_bytes
 	fmt.Println(string(ret))
 
 	// Output:
-	// {"id": 1,"price": "229",,"discount":false}
+	// {"Chair+IKEA":{"count": "1","product": "Chair","manufacturer": "IKEA"},"Desk+IKEA":{"sum": "10","product": "Desk","manufacturer": "IKEA"},"Chair+Herman Miller":{"product": "Chair","manufacturer": "Herman Miller"}}
 }
-
 
 func Example_KeyBy() {
 	ret := KeyBy(rawGroup, "manufacturer") //node_memory_MemTotal_bytes

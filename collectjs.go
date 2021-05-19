@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"strings"
 
 	"git.internal.yunify.com/MDMP2/collectjs/pkg/json/gjson"
 	"git.internal.yunify.com/MDMP2/collectjs/pkg/json/jsonparser"
@@ -56,8 +57,8 @@ func (cc *Collect) Append(path string, value []byte) {
 	newValue := Append(cc.raw, path, value)
 	cc.raw = newValue // update collect
 }
-func (cc *Collect) Del(path string) {
-	newValue := Del(cc.raw, path)
+func (cc *Collect) Del(path ...string) {
+	newValue := Del(cc.raw, path...)
 	cc.raw = newValue // update collect
 }
 
@@ -106,10 +107,12 @@ func Append(raw []byte, path string, value []byte) []byte {
 	}
 }
 
-func Del(raw []byte, path string) []byte {
-	keys := path2JSONPARSER(path)
-	value := jsonparser.Delete(raw, keys...)
-	return value
+func Del(raw []byte, path ...string) []byte {
+	for _, v := range path {
+		keys := path2JSONPARSER(v)
+		raw = jsonparser.Delete(raw, keys...)
+	}
+	return raw
 }
 
 type MapHandle func(key []byte, value []byte) []byte
@@ -211,7 +214,7 @@ func GroupBy(json []byte, path string) []byte {
 	return ret
 }
 
-func MergeBy(json []byte, path string) []byte {
+func MergeBy(json []byte, paths ...string) []byte {
 	c := newCollect(json)
 	if c.datatype != jsonparser.Array {
 		c.err = errors.New("datatype is not array")
@@ -220,13 +223,22 @@ func MergeBy(json []byte, path string) []byte {
 
 	ret := New("{}")
 	c.foreach(func(key []byte, value []byte) {
-		keyValue := Get(value, path)
-		if len(keyValue) == 0 {
+		keys := make([]string, 0, len(paths))
+		for _, path := range paths {
+			keyValue := Get(value, path)
+			if len(keyValue) == 0 {
+				break
+			}
+			keys = append(keys, string(keyValue[1:len(keyValue)-1]))
+		}
+
+		if len(keys) == 0 {
 			return
 		}
-		oldValue := Get(ret.raw, string(keyValue))
+		k := strings.Join(keys, "+")
+		oldValue := Get(ret.raw, string(k))
 		newValue := Merge(oldValue, value)
-		ret.Set(string(keyValue), newValue)
+		ret.Set(string(k), newValue)
 	})
 	return ret.raw
 }

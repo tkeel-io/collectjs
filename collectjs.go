@@ -235,7 +235,8 @@ func MergeBy(json []byte, paths ...string) []byte {
 		if len(keys) == 0 {
 			return
 		}
-		k := strings.Join(keys, "+")
+		k := append([]byte{byte(34)}, []byte(strings.Join(keys, "+"))...)
+		k = append(k, byte(34))
 		oldValue := Get(ret.raw, string(k))
 		newValue := Merge(oldValue, value)
 		ret.Set(string(k), newValue)

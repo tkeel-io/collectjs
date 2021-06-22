@@ -24,6 +24,10 @@ func New(raw string) *Collect {
 	return newCollect(Byte(raw))
 }
 
+func ByteNew(raw []byte) *Collect {
+	return newCollect(raw)
+}
+
 func newCollect(data []byte) *Collect {
 	collect := &Collect{}
 	value := make([]byte, len(data))

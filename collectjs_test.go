@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"git.internal.yunify.com/MDMP2/collectjs/pkg/json/gjson"
+	"github.com/tkeel-io/collectjs/pkg/json/gjson"
 )
 
 var raw = Byte(`{"cpu":1,"mem": ["lo0", "eth1", "eth2"],"a":[{"v":0},{"v":1},{"v":2}],"b":[{"v":{"cv":1}},{"v":{"cv":2}},{"v":{"cv":3}}],"where": 10,"metadata": {"name": "Light1", "price": 11.05}}`)
@@ -121,7 +121,7 @@ func TestCollect_Del(t *testing.T) {
 func Example_Combine() {
 	collection := []byte(`["name", "number"]`)
 	collection2 := []byte(`["Mohamed Salah", 11]`)
-	combine := Combine(collection, collection2)
+	combine, _ := Combine(collection, collection2)
 	fmt.Println(string(combine))
 
 	// Output:
@@ -131,15 +131,15 @@ func Example_Combine() {
 var rawGroup = Byte(`[{"count": "1","product": "Chair","manufacturer": "IKEA"},{"sum": "10","product": "Desk","manufacturer": "IKEA"},{"product": "Chair","manufacturer": "Herman Miller"}]`)
 
 func Example_GroupBy() {
-	ret := GroupBy(rawGroup, "manufacturer") //node_memory_MemTotal_bytes
+	ret, _ := GroupBy(rawGroup, "manufacturer") //node_memory_MemTotal_bytes
 	fmt.Println(string(ret))
 
 	// Output:
-	// {"IKEA":[{"product": "Chair","manufacturer": "IKEA",},{"product": "Desk","manufacturer": "IKEA",}],"Herman Miller":[{"product": "Chair","manufacturer": "Herman Miller",}]}
+	// {"IKEA":[{"count": "1","product": "Chair","manufacturer": "IKEA"},{"sum": "10","product": "Desk","manufacturer": "IKEA"}],"Herman Miller":[{"product": "Chair","manufacturer": "Herman Miller"}]}
 }
 
 func Example_MergeBy() {
-	ret := MergeBy(rawGroup, "product", "manufacturer") //node_memory_MemTotal_bytes
+	ret, _ := MergeBy(rawGroup, "product", "manufacturer") //node_memory_MemTotal_bytes
 	fmt.Println(string(ret))
 
 	// Output:
@@ -147,17 +147,17 @@ func Example_MergeBy() {
 }
 
 func Example_KeyBy() {
-	ret := KeyBy(rawGroup, "manufacturer") //node_memory_MemTotal_bytes
+	ret, _ := KeyBy(rawGroup, "manufacturer") //node_memory_MemTotal_bytes
 	fmt.Println(string(ret))
 
 	// Output:
-	// {"IKEA":{"product": "Desk","manufacturer": "IKEA",},"Herman Miller":{"product": "Chair","manufacturer": "Herman Miller",}}
+	// {"IKEA":{"sum": "10","product": "Desk","manufacturer": "IKEA"},"Herman Miller":{"product": "Chair","manufacturer": "Herman Miller"}}
 }
 
 func Example_Merge() {
 	var rawObject1 = Byte(`{"id": 1,"price": 29,}`)
 	var rawObject2 = Byte(`{"price": "229","discount": false}`)
-	ret := Merge(rawObject1, rawObject2)
+	ret, _ := Merge(rawObject1, rawObject2)
 	fmt.Println(string(ret))
 
 	// Output:
@@ -176,8 +176,7 @@ func Example_Demo() {
 		ret.Set("instance", Get(bytes, "metric.instance"))
 		return ret.raw
 	})
-	ret := GroupBy(result.raw, "instance") //node_memory_MemTotal_bytes
-	fmt.Println(string(ret))
+	ret, _ := GroupBy(result.raw, "instance") //node_memory_MemTotal_bytes
 
 	metricValue := func(p1, p2 *Collect) bool {
 		return bytes.Compare(p1.Get("[0]").raw, p2.Get("[0]").raw) > 0
@@ -187,7 +186,7 @@ func Example_Demo() {
 	fmt.Println(string(result.raw))
 
 	// Output:
-	// {"192.168.14.102:9100":[{"metric":"node_memory_MemAvailable_bytes","instance":"192.168.14.102:9100","timestamp":1620999810.899,"value":"6519189504"},{"metric":"node_memory_MemTotal_bytes","instance":"192.168.14.102:9100","timestamp":1620999810.899,"value":"8203091968"}],"192.168.14.146:9100":[{"metric":"node_memory_MemAvailable_bytes","instance":"192.168.14.146:9100","timestamp":1620999810.899,"value":"1787977728"},{"metric":"node_memory_MemTotal_bytes","instance":"192.168.14.146:9100","timestamp":1620999810.899,"value":"8203091968"}],"192.168.21.163:9100":[{"metric":"node_memory_MemAvailable_bytes","instance":"192.168.21.163:9100","timestamp":1620999810.899,"value":"5775802368"},{"metric":"node_memory_MemTotal_bytes","instance":"192.168.21.163:9100","timestamp":1620999810.899,"value":"8202657792"}],"192.168.21.174:9100":[{"metric":"node_memory_MemAvailable_bytes","instance":"192.168.21.174:9100","timestamp":1620999810.899,"value":"19626115072"},{"metric":"node_memory_MemTotal_bytes","instance":"192.168.21.174:9100","timestamp":1620999810.899,"value":"25112969216"}],"localhost:9100":[{"metric":"node_memory_MemAvailable_bytes","instance":"localhost:9100","timestamp":1620999810.899,"value":"3252543488"},{"metric":"node_memory_MemTotal_bytes","instance":"localhost:9100","timestamp":1620999810.899,"value":"3972988928"}]}
+	// [{"node_memory_MemAvailable_bytes":{"timestamp":1620999810.899,"value":"6519189504"},"instance":"192.168.14.102:9100"},{"node_memory_MemAvailable_bytes":{"timestamp":1620999810.899,"value":"1787977728"},"instance":"192.168.14.146:9100"},{"node_memory_MemAvailable_bytes":{"timestamp":1620999810.899,"value":"5775802368"},"instance":"192.168.21.163:9100"},{"node_memory_MemAvailable_bytes":{"timestamp":1620999810.899,"value":"19626115072"},"instance":"192.168.21.174:9100"},{"node_memory_MemAvailable_bytes":{"timestamp":1620999810.899,"value":"3252543488"},"instance":"localhost:9100"},{"node_memory_MemTotal_bytes":{"timestamp":1620999810.899,"value":"8203091968"},"instance":"192.168.14.102:9100"},{"node_memory_MemTotal_bytes":{"timestamp":1620999810.899,"value":"8203091968"},"instance":"192.168.14.146:9100"},{"node_memory_MemTotal_bytes":{"timestamp":1620999810.899,"value":"8202657792"},"instance":"192.168.21.163:9100"},{"node_memory_MemTotal_bytes":{"timestamp":1620999810.899,"value":"25112969216"},"instance":"192.168.21.174:9100"},{"node_memory_MemTotal_bytes":{"timestamp":1620999810.899,"value":"3972988928"},"instance":"localhost:9100"}]
 }
 
 func Example_Demo2() {
@@ -202,8 +201,8 @@ func Example_Demo2() {
 		ret.Set("instance", Get(bytes, "metric.instance"))
 		return ret.raw
 	})
-	ret := MergeBy(result.raw, "instance") //node_memory_MemTotal_bytes
-	fmt.Println(string(ret))
+
+	ret, _ := MergeBy(result.raw, "instance") //node_memory_MemTotal_bytes
 
 	MemAvailable := func(p1, p2 *Collect) bool {
 		return bytes.Compare(p1.Get("node_memory_MemAvailable_bytes.value").raw, p2.Get("node_memory_MemAvailable_bytes.value").raw) > 0
@@ -214,12 +213,11 @@ func Example_Demo2() {
 
 	sorted := newCollect(ret)
 	sorted.SortBy(MemTotal)
-	fmt.Println(string(sorted.raw))
 	sorted.SortBy(MemAvailable)
 	fmt.Println(string(sorted.raw))
 
 	// Output:
-	// {"192.168.14.102:9100":[{"metric":"node_memory_MemAvailable_bytes","instance":"192.168.14.102:9100","timestamp":1620999810.899,"value":"6519189504"},{"metric":"node_memory_MemTotal_bytes","instance":"192.168.14.102:9100","timestamp":1620999810.899,"value":"8203091968"}],"192.168.14.146:9100":[{"metric":"node_memory_MemAvailable_bytes","instance":"192.168.14.146:9100","timestamp":1620999810.899,"value":"1787977728"},{"metric":"node_memory_MemTotal_bytes","instance":"192.168.14.146:9100","timestamp":1620999810.899,"value":"8203091968"}],"192.168.21.163:9100":[{"metric":"node_memory_MemAvailable_bytes","instance":"192.168.21.163:9100","timestamp":1620999810.899,"value":"5775802368"},{"metric":"node_memory_MemTotal_bytes","instance":"192.168.21.163:9100","timestamp":1620999810.899,"value":"8202657792"}],"192.168.21.174:9100":[{"metric":"node_memory_MemAvailable_bytes","instance":"192.168.21.174:9100","timestamp":1620999810.899,"value":"19626115072"},{"metric":"node_memory_MemTotal_bytes","instance":"192.168.21.174:9100","timestamp":1620999810.899,"value":"25112969216"}],"localhost:9100":[{"metric":"node_memory_MemAvailable_bytes","instance":"localhost:9100","timestamp":1620999810.899,"value":"3252543488"},{"metric":"node_memory_MemTotal_bytes","instance":"localhost:9100","timestamp":1620999810.899,"value":"3972988928"}]}
+	// [{"node_memory_MemAvailable_bytes":{"timestamp":1620999810.899,"value":"3252543488"},"instance":"localhost:9100","node_memory_MemTotal_bytes":{"timestamp":1620999810.899,"value":"3972988928"}},{"node_memory_MemAvailable_bytes":{"timestamp":1620999810.899,"value":"3"},"instance":"192.168.14.146:9100","node_memory_MemTotal_bytes":{"timestamp":1620999810.899,"value":"8203091968"}},{"node_memory_MemAvailable_bytes":{"timestamp":1620999810.899,"value":"2"},"instance":"192.168.21.163:9100","node_memory_MemTotal_bytes":{"timestamp":1620999810.899,"value":"8202657792"}},{"node_memory_MemAvailable_bytes":{"timestamp":1620999810.899,"value":"19626115072"},"instance":"192.168.21.174:9100","node_memory_MemTotal_bytes":{"timestamp":1620999810.899,"value":"25112969216"}},{"node_memory_MemAvailable_bytes":{"timestamp":1620999810.899,"value":"1"},"instance":"192.168.14.102:9100","node_memory_MemTotal_bytes":{"timestamp":1620999810.899,"value":"8203091968"}}]
 }
 
 func Example_AAA() {

@@ -2,7 +2,7 @@ package collectjs
 
 import (
 	"bytes"
-	"fmt"
+	"testing"
 )
 
 var planets = []*Collect{
@@ -11,7 +11,7 @@ var planets = []*Collect{
 	New(`["Mars", 0.107, 1.5]`),
 }
 
-func Example_a() {
+func TestSort(t *testing.T) {
 
 	// Closures that order the Planet structure.
 	name := func(p1, p2 *Collect) bool {
@@ -26,13 +26,13 @@ func Example_a() {
 
 	// Sort the planets by the various criteria.
 	By(name).Sort(planets)
-	fmt.Println("By name:", string(planets[0].raw), string(planets[1].raw), string(planets[2].raw))
+	t.Log("By name:", string(planets[0].raw), string(planets[1].raw), string(planets[2].raw))
 
 	By(mass).Sort(planets)
-	fmt.Println("By mass:", string(planets[0].raw), string(planets[1].raw), string(planets[2].raw))
+	t.Log("By mass:", string(planets[0].raw), string(planets[1].raw), string(planets[2].raw))
 
 	By(distance).Sort(planets)
-	fmt.Println("By distance:", string(planets[0].raw), string(planets[1].raw), string(planets[2].raw))
+	t.Log("By distance:", string(planets[0].raw), string(planets[1].raw), string(planets[2].raw))
 
 	// Output:
 }

@@ -12,16 +12,18 @@ import (
 var activeTest = ""
 
 func toArray(data []byte) (result [][]byte) {
-	ArrayEach(data, func(value []byte, dataType ValueType, offset int, err error) {
+	ArrayEach(data, func(value []byte, dataType ValueType, offset int) error {
 		result = append(result, value)
+		return nil
 	})
 
 	return
 }
 
 func toStringArray(data []byte) (result []string) {
-	ArrayEach(data, func(value []byte, dataType ValueType, offset int, err error) {
+	ArrayEach(data, func(value []byte, dataType ValueType, offset int) error {
 		result = append(result, string(value))
+		return nil
 	})
 
 	return
@@ -1208,38 +1210,39 @@ func TestArrayEach(t *testing.T) {
 	mock := []byte(`{"a": { "b":[{"x": 1} ,{"x":2},{ "x":3}, {"x":4} ]}}`)
 	count := 0
 
-	ArrayEach(mock, func(value []byte, dataType ValueType, offset int, err error) {
+	ArrayEach(mock, func(value []byte, dataType ValueType, offset int) error {
 		count++
-
+		var err error
 		switch count {
 		case 1:
 			if string(value) != `{"x": 1}` {
-				t.Errorf("Wrong first item: %s", string(value))
+				err = fmt.Errorf("Wrong first item: %s", string(value))
 			}
 		case 2:
 			if string(value) != `{"x":2}` {
-				t.Errorf("Wrong second item: %s", string(value))
+				err = fmt.Errorf("Wrong second item: %s", string(value))
 			}
 		case 3:
 			if string(value) != `{ "x":3}` {
-				t.Errorf("Wrong third item: %s", string(value))
+				err = fmt.Errorf("Wrong third item: %s", string(value))
 			}
 		case 4:
 			if string(value) != `{"x":4}` {
-				t.Errorf("Wrong forth item: %s", string(value))
+				err = fmt.Errorf("Wrong forth item: %s", string(value))
 			}
 		default:
-			t.Errorf("Should process only 4 items")
+			err = fmt.Errorf("Should process only 4 items")
 		}
+		return err
 	}, "a", "b")
 }
 
 func TestArrayEachEmpty(t *testing.T) {
-	funcError := func([]byte, ValueType, int, error) { t.Errorf("Run func not allow") }
+	funcError := func([]byte, ValueType, int) error { return fmt.Errorf("Run func not allow") }
 
 	type args struct {
 		data []byte
-		cb   func(value []byte, dataType ValueType, offset int, err error)
+		cb   func(value []byte, dataType ValueType, offset int) error
 		keys []string
 	}
 	tests := []struct {

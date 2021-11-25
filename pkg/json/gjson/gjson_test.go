@@ -1480,8 +1480,8 @@ func TestArrayValues(t *testing.T) {
 			`Index:0}`,
 		`gjson.result{Type:2, raw:"0", Str:"", Num:0, Index:0}`,
 	}, "\n")
-	if output != expect {
-		t.Fatalf("expected '%v', got '%v'", expect, output)
+	if output != expect+"\n" {
+		t.Fatalf("expected: \n'%v'\n got: \n'%v'\n", expect, output)
 	}
 
 }

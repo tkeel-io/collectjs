@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"git.internal.yunify.com/MDMP2/collectjs/pkg/json/gjson"
-	"git.internal.yunify.com/MDMP2/collectjs/pkg/json/jsonparser"
+	"github.com/tkeel-io/collectjs/pkg/json/gjson"
+	"github.com/tkeel-io/collectjs/pkg/json/jsonparser"
 )
 
 var EmptyBytes = []byte("")

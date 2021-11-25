@@ -18,10 +18,11 @@ package json
 
 import (
 	"bytes"
-	"git.internal.yunify.com/MDMP2/ruleql/pkg/json/gjson"
-	"git.internal.yunify.com/MDMP2/ruleql/pkg/json/jsonparser"
-	"git.internal.yunify.com/MDMP2/ruleql/pkg/json/gojsonq"
 	"testing"
+
+	"github.com/tkeel-io/collectjs/pkg/json/gjson"
+	"github.com/tkeel-io/collectjs/pkg/json/gojsonq"
+	"github.com/tkeel-io/collectjs/pkg/json/jsonparser"
 )
 
 var json = `{
@@ -49,14 +50,12 @@ func BenchmarkGet_jsonparser(b *testing.B) {
 	}
 }
 
-
 func BenchmarkGet_gojsonq(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		j := gojsonq.New().FromString(json)
 		j.Find("age")
 	}
 }
-
 
 func BenchmarkGet_gjson2(b *testing.B) {
 	for i := 0; i < b.N; i++ {
@@ -72,7 +71,6 @@ func BenchmarkGet_jsonparser2(b *testing.B) {
 	}
 }
 
-
 func BenchmarkGet_gojsonq2(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		j := gojsonq.New().FromString(json)
@@ -80,7 +78,6 @@ func BenchmarkGet_gojsonq2(b *testing.B) {
 		j.Find("movie")
 	}
 }
-
 
 func BenchmarkGet_gjson3(b *testing.B) {
 	for i := 0; i < b.N; i++ {
@@ -105,7 +102,6 @@ func BenchmarkGet_jsonparser_getunsafestring3(b *testing.B) {
 		jsonparser.GetUnsafeString(jsonByt, "age")
 	}
 }
-
 
 func BenchmarkGet_gojsonq3(b *testing.B) {
 	for i := 0; i < b.N; i++ {

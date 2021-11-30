@@ -57,8 +57,8 @@ func (cc *Collect) GetDataType() string {
 }
 
 func (cc *Collect) Get(path string) *Collect {
-	value := Get(cc.raw, path)
-	return newCollect(value)
+	value, dataT, err := Get(cc.raw, path)
+	return &Collect{raw: value, datatype: dataT, err: err}
 }
 
 func (cc *Collect) Set(path string, value []byte) {
@@ -134,7 +134,8 @@ func Combine(key []byte, value []byte) ([]byte, error) {
 	)
 
 	cKey.Foreach(func(key []byte, value []byte) {
-		if ret, err = jsonparser.Set(ret, Get(cValue.raw, fmt.Sprintf("[%d]", idx)), string(value)); nil != err {
+		val, _, _ := Get(cValue.raw, fmt.Sprintf("[%d]", idx))
+		if ret, err = jsonparser.Set(ret, val, string(value)); nil != err {
 			cKey.err = err
 		}
 		idx++
@@ -151,7 +152,7 @@ func GroupBy(json []byte, path string) ([]byte, error) {
 	var err error
 	ret := []byte("{}")
 	c.Foreach(func(key []byte, value []byte) {
-		keyValue := Get(value, path)
+		keyValue, _, _ := Get(value, path)
 		if len(keyValue) == 0 {
 			return
 		}
@@ -174,7 +175,7 @@ func MergeBy(json []byte, paths ...string) ([]byte, error) {
 	c.Foreach(func(key []byte, value []byte) {
 		keys := make([]string, 0, len(paths))
 		for _, path := range paths {
-			keyValue := Get(value, path)
+			keyValue, _, _ := Get(value, path)
 			if len(keyValue) == 0 {
 				break
 			}
@@ -188,7 +189,7 @@ func MergeBy(json []byte, paths ...string) ([]byte, error) {
 		var newValue []byte
 		k := append([]byte{byte(34)}, []byte(strings.Join(keys, "+"))...)
 		k = append(k, byte(34))
-		oldValue := Get(ret.raw, string(k))
+		oldValue, _, _ := Get(ret.raw, string(k))
 		if newValue, err = Merge(oldValue, value); nil != err {
 			ret.err = err
 		}
@@ -206,7 +207,7 @@ func KeyBy(json []byte, path string) ([]byte, error) {
 	var err error
 	ret := []byte("{}")
 	c.Foreach(func(key []byte, value []byte) {
-		keyValue := Get(value, path)
+		keyValue, _, _ := Get(value, path)
 		if keyValue[0] == '"' && keyValue[len(keyValue)-1] == '"' {
 			keyValue = keyValue[1 : len(keyValue)-1]
 		}
@@ -246,7 +247,7 @@ func Sort(json []byte, path string) ([]byte, error) {
 	var err error
 	ret := []byte("[]")
 	c.Foreach(func(key []byte, value []byte) {
-		keyValue := Get(value, path)
+		keyValue, _, _ := Get(value, path)
 		if keyValue[0] == '"' && keyValue[len(keyValue)-1] == '"' {
 			keyValue = keyValue[1 : len(keyValue)-1]
 		}

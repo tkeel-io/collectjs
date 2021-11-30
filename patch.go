@@ -4,20 +4,22 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/tkeel-io/collectjs/pkg/json/gjson"
+	"github.com/tidwall/gjson"
 	"github.com/tkeel-io/collectjs/pkg/json/jsonparser"
 )
 
-func Get(raw []byte, path string) []byte {
+func Get(raw []byte, path string) ([]byte, jsonparser.ValueType, error) {
 	keys := path2JSONPARSER(path)
 
 	if value, dataType, _, err := jsonparser.Get(raw, keys...); err == nil {
-		return warpValue(dataType, value)
-	} else {
-		path = path2GJSON(path)
-		ret := gjson.GetBytes(raw, path)
-		return []byte(ret.String())
+		return warpValue(dataType, value), dataType, nil
 	}
+	path = path2GJSON(path)
+	ret := gjson.GetBytes(raw, path)
+	if gjson.Null == ret.Type {
+		return nil, jsonparser.NotExist, jsonparser.KeyPathNotFoundError
+	}
+	return []byte(ret.String()), convertType(ret), nil
 }
 
 func warpValue(dataType jsonparser.ValueType, value []byte) []byte {

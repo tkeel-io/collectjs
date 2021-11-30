@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/tkeel-io/collectjs/pkg/json/gjson"
+	"github.com/tidwall/gjson"
 	"github.com/tkeel-io/collectjs/pkg/json/gojsonq"
 	"github.com/tkeel-io/collectjs/pkg/json/jsonparser"
 )

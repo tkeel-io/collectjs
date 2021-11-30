@@ -755,6 +755,12 @@ func Set(data []byte, setValue []byte, keys ...string) (value []byte, err error)
 				depth++
 			}
 		}
+
+		// check depth.
+		if len(keys)-depth > 1 {
+			return nil, KeyPathNotFoundError
+		}
+
 		comma := true
 		object := false
 		if endOffset == -1 {
@@ -805,8 +811,11 @@ func Append(data []byte, addValue []byte, keys ...string) (value []byte, err err
 	var setValue []byte
 	value, _, _, err = Get(data, keys...)
 	if err != nil {
-		setValue = bytes.Join([][]byte{[]byte("["), addValue, []byte("]")}, []byte{})
-		return Set(data, setValue, keys...)
+		if err == KeyPathNotFoundError {
+			setValue = bytes.Join([][]byte{[]byte("["), addValue, []byte("]")}, []byte{})
+			return Set(data, setValue, keys...)
+		}
+		return nil, err
 	} else {
 		size := len(value)
 		if value[0] == []byte("[")[0] && value[size-1] == []byte("]")[0] {
@@ -817,11 +826,6 @@ func Append(data []byte, addValue []byte, keys ...string) (value []byte, err err
 			}
 			setValue = bytes.Join([][]byte{[]byte("["), setValue, []byte("]")}, []byte{})
 		} else {
-			//setValue = bytes.Join([][]byte{
-			//	[]byte("["),
-			//	bytes.Join([][]byte{value, addValue}, []byte(",")),
-			//	[]byte("]"),
-			//}, []byte{})
 			return nil, UnknownValueTypeError
 		}
 		if len(keys) == 0 {
@@ -829,6 +833,11 @@ func Append(data []byte, addValue []byte, keys ...string) (value []byte, err err
 		}
 		return Set(data, setValue, keys...)
 	}
+}
+
+func ParseType(data []byte) (ValueType, error) {
+	_, dataT, _, err := getType(data, 0)
+	return dataT, err
 }
 
 func getType(data []byte, offset int) ([]byte, ValueType, int, error) {

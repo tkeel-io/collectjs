@@ -6,7 +6,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/tkeel-io/collectjs/pkg/json/gjson"
+	"github.com/stretchr/testify/assert"
+	"github.com/tidwall/gjson"
 )
 
 var raw = Byte(`{"cpu":1,"mem": ["lo0", "eth1", "eth2"],"a":[{"v":0},{"v":1},{"v":2}],"b":[{"v":{"cv":1}},{"v":{"cv":2}},{"v":{"cv":3}}],"where": 10,"metadata": {"name": "Light1", "price": 11.05}}`)
@@ -47,6 +48,12 @@ func TestCollect_Get(t *testing.T) {
 	}
 }
 
+func TestCollect_SetSub(t *testing.T) {
+	cc := newCollect([]byte(`{}`))
+	cc.Set("xx.abc", []byte("sss"))
+	assert.NotNil(t, cc.err)
+}
+
 func TestCollect_Set(t *testing.T) {
 	tests := []struct {
 		name  string
@@ -64,7 +71,7 @@ func TestCollect_Set(t *testing.T) {
 			cc := newCollect(raw)
 			cc.Set(tt.path, []byte(tt.value))
 			if got := cc.raw; !reflect.DeepEqual(string(got), tt.want) {
-				t.Errorf("Get() = %v, want %v", string(got), tt.want)
+				t.Errorf("Get() = %v, want %v, err: %v", string(got), tt.want, cc.err)
 			}
 		})
 	}
@@ -169,11 +176,15 @@ func Example_Demo() {
 	result := collection1.Get("data.result")
 	result.Map(func(key []byte, bytes []byte) []byte {
 		val := New("{}")
-		val.Set("timestamp", Get(bytes, "value[0]"))
-		val.Set("value", Get(bytes, "value[1]"))
+		v, _, _ := Get(bytes, "value[0]")
+		val.Set("timestamp", v)
+		v, _, _ = Get(bytes, "value[1]")
+		val.Set("value", v)
 		ret := New("{}")
-		ret.Set(string(Get(bytes, "metric.__name__")), val.raw)
-		ret.Set("instance", Get(bytes, "metric.instance"))
+		v, _, _ = Get(bytes, "metric.__name__")
+		ret.Set(string(v), val.raw)
+		v, _, _ = Get(bytes, "metric.instance")
+		ret.Set("instance", v)
 		return ret.raw
 	})
 	ret, _ := GroupBy(result.raw, "instance") //node_memory_MemTotal_bytes
@@ -194,11 +205,15 @@ func Example_Demo2() {
 	result := collection1.Get("data.result")
 	result.Map(func(key []byte, bytes []byte) []byte {
 		val := New("{}")
-		val.Set("timestamp", Get(bytes, "value[0]"))
-		val.Set("value", Get(bytes, "value[1]"))
+		v, _, _ := Get(bytes, "value[0]")
+		val.Set("timestamp", v)
+		v, _, _ = Get(bytes, "value[1]")
+		val.Set("value", v)
 		ret := New("{}")
-		ret.Set(string(Get(bytes, "metric.__name__")), val.raw)
-		ret.Set("instance", Get(bytes, "metric.instance"))
+		v, _, _ = Get(bytes, "metric.__name__")
+		ret.Set(string(v), val.raw)
+		v, _, _ = Get(bytes, "metric.instance")
+		ret.Set("instance", v)
 		return ret.raw
 	})
 

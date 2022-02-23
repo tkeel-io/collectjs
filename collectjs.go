@@ -79,13 +79,13 @@ func (cc *Collect) Copy() *Collect {
 
 type MapHandle func(key []byte, value []byte) []byte
 
-func (cc *Collect) Foreach(fn func(key []byte, value []byte)) {
+func (cc *Collect) Foreach(fn func(key []byte, value []byte, dataType jsonparser.ValueType)) {
 	cc.raw = ForEach(cc.raw, cc.datatype, fn)
 }
 
 func (cc *Collect) Map(handle MapHandle) {
 	ret := cc.Copy()
-	cc.Foreach(func(key []byte, value []byte) {
+	cc.Foreach(func(key []byte, value []byte, dataType jsonparser.ValueType) {
 		newValue := handle(key, value)
 		ret.Set(string(key), newValue)
 	})
@@ -105,7 +105,7 @@ func (cc *Collect) SortBy(fn func(p1 *Collect, p2 *Collect) bool) {
 		return
 	}
 	carr := make([]*Collect, 0)
-	cc.Foreach(func(key []byte, value []byte) {
+	cc.Foreach(func(key []byte, value []byte, dataType jsonparser.ValueType) {
 		carr = append(carr, newCollect(value))
 	})
 	By(fn).Sort(carr)
@@ -133,7 +133,7 @@ func Combine(key []byte, value []byte) ([]byte, error) {
 		ret = []byte("{}")
 	)
 
-	cKey.Foreach(func(key []byte, value []byte) {
+	cKey.Foreach(func(key []byte, value []byte, dataType jsonparser.ValueType) {
 		val, _, _ := Get(cValue.raw, fmt.Sprintf("[%d]", idx))
 		if ret, err = jsonparser.Set(ret, val, string(value)); nil != err {
 			cKey.err = err
@@ -151,7 +151,7 @@ func GroupBy(json []byte, path string) ([]byte, error) {
 
 	var err error
 	ret := []byte("{}")
-	c.Foreach(func(key []byte, value []byte) {
+	c.Foreach(func(key []byte, value []byte, dataType jsonparser.ValueType) {
 		keyValue, _, _ := Get(value, path)
 		if len(keyValue) == 0 {
 			return
@@ -172,7 +172,7 @@ func MergeBy(json []byte, paths ...string) ([]byte, error) {
 
 	var err error
 	ret := New("{}")
-	c.Foreach(func(key []byte, value []byte) {
+	c.Foreach(func(key []byte, value []byte, dataType jsonparser.ValueType) {
 		keys := make([]string, 0, len(paths))
 		for _, path := range paths {
 			keyValue, _, _ := Get(value, path)
@@ -206,7 +206,7 @@ func KeyBy(json []byte, path string) ([]byte, error) {
 
 	var err error
 	ret := []byte("{}")
-	c.Foreach(func(key []byte, value []byte) {
+	c.Foreach(func(key []byte, value []byte, dataType jsonparser.ValueType) {
 		keyValue, _, _ := Get(value, path)
 		if keyValue[0] == '"' && keyValue[len(keyValue)-1] == '"' {
 			keyValue = keyValue[1 : len(keyValue)-1]
@@ -231,7 +231,7 @@ func Merge(oldValue []byte, mergeValue []byte) ([]byte, error) {
 		return nil, errors.New("datatype is not object")
 	}
 
-	mc.Foreach(func(key []byte, value []byte) {
+	mc.Foreach(func(key []byte, value []byte, dataType jsonparser.ValueType) {
 		cc.Set(string(key), value)
 	})
 
@@ -246,7 +246,7 @@ func Sort(json []byte, path string) ([]byte, error) {
 
 	var err error
 	ret := []byte("[]")
-	c.Foreach(func(key []byte, value []byte) {
+	c.Foreach(func(key []byte, value []byte, dataType jsonparser.ValueType) {
 		keyValue, _, _ := Get(value, path)
 		if keyValue[0] == '"' && keyValue[len(keyValue)-1] == '"' {
 			keyValue = keyValue[1 : len(keyValue)-1]

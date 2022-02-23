@@ -38,6 +38,7 @@ func Set(raw []byte, path string, value []byte) ([]byte, error) {
 	keys := path2JSONPARSER(path)
 	return jsonparser.Set(raw, value, keys...)
 }
+
 func Append(raw []byte, path string, value []byte) ([]byte, error) {
 	keys := path2JSONPARSER(path)
 	return jsonparser.Append(raw, value, keys...)
@@ -51,11 +52,11 @@ func Del(raw []byte, path ...string) []byte {
 	return raw
 }
 
-func ForEach(raw []byte, datatype jsonparser.ValueType, fn func(key []byte, value []byte)) []byte {
+func ForEach(raw []byte, datatype jsonparser.ValueType, fn func(key []byte, value []byte, dataType jsonparser.ValueType)) []byte {
 	// dispose object.
 	if datatype == jsonparser.Object {
 		jsonparser.ObjectEach(raw, func(key []byte, value []byte, dataType jsonparser.ValueType, offset int) error {
-			fn(key, warpValue(dataType, value))
+			fn(key, warpValue(dataType, value), dataType)
 			return nil
 		})
 	}
@@ -64,7 +65,7 @@ func ForEach(raw []byte, datatype jsonparser.ValueType, fn func(key []byte, valu
 	if datatype == jsonparser.Array {
 		idx := 0
 		jsonparser.ArrayEach(raw, func(value []byte, dataType jsonparser.ValueType, offset int) error {
-			fn(Byte(fmt.Sprintf("[%d]", idx)), warpValue(dataType, value))
+			fn(Byte(fmt.Sprintf("[%d]", idx)), warpValue(dataType, value), dataType)
 			idx++
 			return nil
 		})

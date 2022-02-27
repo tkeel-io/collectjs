@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
-
-	"github.com/tkeel-io/collectjs/pkg/json/gjson"
 )
 
 var raw = Byte(`{"cpu":1,"mem": ["lo0", "eth1", "eth2"],"a":[{"v":0},{"v":1},{"v":2}],"b":[{"v":{"cv":1}},{"v":{"cv":2}},{"v":{"cv":3}}],"where": 10,"metadata": {"name": "Light1", "price": 11.05}}`)
@@ -40,8 +38,8 @@ func TestCollect_Get(t *testing.T) {
 	for _, tt := range tests {
 		cc := newCollect(tt.raw)
 		t.Run(tt.name, func(t *testing.T) {
-			if got := cc.Get(tt.path); !reflect.DeepEqual(string(got.raw), tt.want) {
-				t.Errorf("Get() = %v, want %v", string(got.raw), tt.want)
+			if got := cc.Get(tt.path); !reflect.DeepEqual(string(got.Raw()), tt.want) {
+				t.Errorf("Get() = %v, want %v", string(got.Raw()), tt.want)
 			}
 		})
 	}
@@ -51,20 +49,20 @@ func TestCollect_Set(t *testing.T) {
 	tests := []struct {
 		name  string
 		path  string
-		value string
+		value *Collect
 		want  interface{}
 	}{
-		{"2", "cpu", "2", `{"cpu":2,"mem": ["lo0", "eth1", "eth2"],"a":[{"v":0},{"v":1},{"v":2}],"b":[{"v":{"cv":1}},{"v":{"cv":2}},{"v":{"cv":3}}],"where": 10,"metadata": {"name": "Light1", "price": 11.05}}`},
-		{"3", "a", `{"v":0}`, `{"cpu":1,"mem": ["lo0", "eth1", "eth2"],"a":{"v":0},"b":[{"v":{"cv":1}},{"v":{"cv":2}},{"v":{"cv":3}}],"where": 10,"metadata": {"name": "Light1", "price": 11.05}}`},
-		{"4", "a[0]", `0`, `{"cpu":1,"mem": ["lo0", "eth1", "eth2"],"a":[0,{"v":1},{"v":2}],"b":[{"v":{"cv":1}},{"v":{"cv":2}},{"v":{"cv":3}}],"where": 10,"metadata": {"name": "Light1", "price": 11.05}}`},
-		{"5", "a[0].v", `{"v":0}`, `{"cpu":1,"mem": ["lo0", "eth1", "eth2"],"a":[{"v":{"v":0}},{"v":1},{"v":2}],"b":[{"v":{"cv":1}},{"v":{"cv":2}},{"v":{"cv":3}}],"where": 10,"metadata": {"name": "Light1", "price": 11.05}}`},
+		//{"2", "cpu", StringNode("2"), `{"cpu":2,"mem": ["lo0", "eth1", "eth2"],"a":[{"v":0},{"v":1},{"v":2}],"b":[{"v":{"cv":1}},{"v":{"cv":2}},{"v":{"cv":3}}],"where": 10,"metadata": {"name": "Light1", "price": 11.05}}`},
+		{"3", "a", New(`{"v":0}`), `{"cpu":1,"mem": ["lo0", "eth1", "eth2"],"a":{"v":0},"b":[{"v":{"cv":1}},{"v":{"cv":2}},{"v":{"cv":3}}],"where": 10,"metadata": {"name": "Light1", "price": 11.05}}`},
+		{"4", "a[0]", New(`0`), `{"cpu":1,"mem": ["lo0", "eth1", "eth2"],"a":[0,{"v":1},{"v":2}],"b":[{"v":{"cv":1}},{"v":{"cv":2}},{"v":{"cv":3}}],"where": 10,"metadata": {"name": "Light1", "price": 11.05}}`},
+		{"5", "a[0].v", New(`{"v":0}`), `{"cpu":1,"mem": ["lo0", "eth1", "eth2"],"a":[{"v":{"v":0}},{"v":1},{"v":2}],"b":[{"v":{"cv":1}},{"v":{"cv":2}},{"v":{"cv":3}}],"where": 10,"metadata": {"name": "Light1", "price": 11.05}}`},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cc := newCollect(raw)
-			cc.Set(tt.path, []byte(tt.value))
-			if got := cc.raw; !reflect.DeepEqual(string(got), tt.want) {
-				t.Errorf("Get() = %v, want %v", string(got), tt.want)
+			cc.Set(tt.path, tt.value)
+			if got := cc.Raw(); !reflect.DeepEqual(string(got), tt.want) {
+				t.Errorf("\nGet()  = %v\nWant() = %v", string(got), tt.want)
 			}
 		})
 	}
@@ -72,25 +70,35 @@ func TestCollect_Set(t *testing.T) {
 
 func TestCollect_Append(t *testing.T) {
 	tests := []struct {
-		name  string
-		raw   []byte
-		path  string
-		value string
-		want  interface{}
+		name    string
+		raw     []byte
+		path    string
+		value   *Collect
+		wantErr interface{}
+		want    interface{}
 	}{
-		{"1", raw, "cpu", "2", `Unknown value type`},
-		{"2", raw, "mem", "2", `{"cpu":1,"mem": ["lo0", "eth1", "eth2",2],"a":[{"v":0},{"v":1},{"v":2}],"b":[{"v":{"cv":1}},{"v":{"cv":2}},{"v":{"cv":3}}],"where": 10,"metadata": {"name": "Light1", "price": 11.05}}`},
-		{"3", raw, "a", `{"v":11}`, `{"cpu":1,"mem": ["lo0", "eth1", "eth2"],"a":[{"v":0},{"v":1},{"v":2},{"v":11}],"b":[{"v":{"cv":1}},{"v":{"cv":2}},{"v":{"cv":3}}],"where": 10,"metadata": {"name": "Light1", "price": 11.05}}`},
-		{"4", raw, "a[0]", `0`, `Unknown value type`},
-		{"5", raw, "a[0].v", `{"v":0}`, `Unknown value type`},
-		{"5", rawEmptyArray, "", `{"v":0}`, `[{"v":0}]`},
+		{"1", raw, "cpu", New("2"), `Unknown value type`, raw},
+		{"2", raw, "mem", New("2"), nil, `{"cpu":1,"mem": ["lo0", "eth1", "eth2",2],"a":[{"v":0},{"v":1},{"v":2}],"b":[{"v":{"cv":1}},{"v":{"cv":2}},{"v":{"cv":3}}],"where": 10,"metadata": {"name": "Light1", "price": 11.05}}`},
+		{"3", raw, "a", New(`{"v":11}`), nil, `{"cpu":1,"mem": ["lo0", "eth1", "eth2"],"a":[{"v":0},{"v":1},{"v":2},{"v":11}],"b":[{"v":{"cv":1}},{"v":{"cv":2}},{"v":{"cv":3}}],"where": 10,"metadata": {"name": "Light1", "price": 11.05}}`},
+		{"4", raw, "a[0]", New(`0`), `Unknown value type`, raw},
+		{"5", raw, "a[0].v", New(`{"v":0}`), `Unknown value type`, raw},
+		{"5", rawEmptyArray, "", New(`{"v":0}`), nil, `[{"v":0}]`},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cc := newCollect(tt.raw)
-			cc.Append(tt.path, []byte(tt.value))
-			if got := cc.raw; !reflect.DeepEqual(string(got), tt.want) {
-				t.Errorf("Get() = %v, want %v", string(got), tt.want)
+			cc.Append(tt.path, tt.value)
+			if tt.wantErr != nil {
+				if !reflect.DeepEqual(cc.Error().Error(), tt.wantErr) {
+					t.Errorf("Get(2) = %v, want %v", cc.Error(), tt.wantErr)
+				}
+			} else {
+				if cc.Error() != nil {
+					t.Errorf("Get(1) = %v, want %v", cc.Error(), tt.wantErr)
+				}
+				if !reflect.DeepEqual(cc.String(), tt.want) {
+					t.Errorf("Get() = %v, want %v", cc.String(), tt.want)
+				}
 			}
 		})
 	}
@@ -111,7 +119,7 @@ func TestCollect_Del(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cc := newCollect(raw)
 			cc.Del(tt.path...)
-			if got := cc.raw; !reflect.DeepEqual(string(got), tt.want) {
+			if got := cc.Raw(); !reflect.DeepEqual(string(got), tt.want) {
 				t.Errorf("Get() = %v, want %v", string(got), tt.want)
 			}
 		})
@@ -128,7 +136,11 @@ func Example_Combine() {
 	// {"name":"Mohamed Salah","number":11}
 }
 
-var rawGroup = Byte(`[{"count": "1","product": "Chair","manufacturer": "IKEA"},{"sum": "10","product": "Desk","manufacturer": "IKEA"},{"product": "Chair","manufacturer": "Herman Miller"}]`)
+var rawGroup = Byte(`[
+	{"count": "1","product": "Chair","manufacturer": "IKEA"},
+	{"sum": "10","product": "Desk","manufacturer": "IKEA"},
+	{"product": "Chair","manufacturer": "Herman Miller"}
+]`)
 
 func Example_GroupBy() {
 	ret, _ := GroupBy(rawGroup, "manufacturer") //node_memory_MemTotal_bytes
@@ -155,35 +167,35 @@ func Example_KeyBy() {
 }
 
 func Example_Merge() {
-	var rawObject1 = Byte(`{"id": 1,"price": 29,}`)
+	var rawObject1 = Byte(`{"id": 1,"price": 29}`)
 	var rawObject2 = Byte(`{"price": "229","discount": false}`)
 	ret, _ := Merge(rawObject1, rawObject2)
 	fmt.Println(string(ret))
 
 	// Output:
-	// {"id": 1,"price": "229",,"discount":false}
+	// {"id": 1,"price": "229","discount":false}
 }
 
 func Example_Demo() {
 	collection1 := New(`{"status":"success","data":{"resultType":"vector","result":[{"metric":{"__name__":"node_memory_MemAvailable_bytes","instance":"192.168.14.102:9100","job":"linux"},"value":[1620999810.899,"6519189504"]},{"metric":{"__name__":"node_memory_MemAvailable_bytes","instance":"192.168.14.146:9100","job":"linux"},"value":[1620999810.899,"1787977728"]},{"metric":{"__name__":"node_memory_MemAvailable_bytes","instance":"192.168.21.163:9100","job":"linux"},"value":[1620999810.899,"5775802368"]},{"metric":{"__name__":"node_memory_MemAvailable_bytes","instance":"192.168.21.174:9100","job":"linux"},"value":[1620999810.899,"19626115072"]},{"metric":{"__name__":"node_memory_MemAvailable_bytes","instance":"localhost:9100","job":"linux"},"value":[1620999810.899,"3252543488"]},{"metric":{"__name__":"node_memory_MemTotal_bytes","instance":"192.168.14.102:9100","job":"linux"},"value":[1620999810.899,"8203091968"]},{"metric":{"__name__":"node_memory_MemTotal_bytes","instance":"192.168.14.146:9100","job":"linux"},"value":[1620999810.899,"8203091968"]},{"metric":{"__name__":"node_memory_MemTotal_bytes","instance":"192.168.21.163:9100","job":"linux"},"value":[1620999810.899,"8202657792"]},{"metric":{"__name__":"node_memory_MemTotal_bytes","instance":"192.168.21.174:9100","job":"linux"},"value":[1620999810.899,"25112969216"]},{"metric":{"__name__":"node_memory_MemTotal_bytes","instance":"localhost:9100","job":"linux"},"value":[1620999810.899,"3972988928"]}]}}`)
 	result := collection1.Get("data.result")
-	result.Map(func(key []byte, bytes []byte) []byte {
+	result.Map(func(key []byte, c *Collect) Node {
 		val := New("{}")
-		val.Set("timestamp", Get(bytes, "value[0]"))
-		val.Set("value", Get(bytes, "value[1]"))
+		val.Set("timestamp", c.Get("value[0]"))
+		val.Set("value", c.Get("value[1]"))
 		ret := New("{}")
-		ret.Set(string(Get(bytes, "metric.__name__")), val.raw)
-		ret.Set("instance", Get(bytes, "metric.instance"))
-		return ret.raw
+		ret.Set(c.Get("metric.__name__").String(), val)
+		ret.Set("instance", c.Get("metric.instance"))
+		return ret
 	})
-	ret, _ := GroupBy(result.raw, "instance") //node_memory_MemTotal_bytes
+	ret, _ := GroupBy(result.Raw(), "instance") //node_memory_MemTotal_bytes
 
 	metricValue := func(p1, p2 *Collect) bool {
-		return bytes.Compare(p1.Get("[0]").raw, p2.Get("[0]").raw) > 0
+		return bytes.Compare(p1.Get("[0]").Raw(), p2.Get("[0]").Raw()) > 0
 	}
 
 	newCollect(ret).SortBy(metricValue)
-	fmt.Println(string(result.raw))
+	fmt.Println(string(result.Raw()))
 
 	// Output:
 	// [{"node_memory_MemAvailable_bytes":{"timestamp":1620999810.899,"value":"6519189504"},"instance":"192.168.14.102:9100"},{"node_memory_MemAvailable_bytes":{"timestamp":1620999810.899,"value":"1787977728"},"instance":"192.168.14.146:9100"},{"node_memory_MemAvailable_bytes":{"timestamp":1620999810.899,"value":"5775802368"},"instance":"192.168.21.163:9100"},{"node_memory_MemAvailable_bytes":{"timestamp":1620999810.899,"value":"19626115072"},"instance":"192.168.21.174:9100"},{"node_memory_MemAvailable_bytes":{"timestamp":1620999810.899,"value":"3252543488"},"instance":"localhost:9100"},{"node_memory_MemTotal_bytes":{"timestamp":1620999810.899,"value":"8203091968"},"instance":"192.168.14.102:9100"},{"node_memory_MemTotal_bytes":{"timestamp":1620999810.899,"value":"8203091968"},"instance":"192.168.14.146:9100"},{"node_memory_MemTotal_bytes":{"timestamp":1620999810.899,"value":"8202657792"},"instance":"192.168.21.163:9100"},{"node_memory_MemTotal_bytes":{"timestamp":1620999810.899,"value":"25112969216"},"instance":"192.168.21.174:9100"},{"node_memory_MemTotal_bytes":{"timestamp":1620999810.899,"value":"3972988928"},"instance":"localhost:9100"}]
@@ -192,40 +204,40 @@ func Example_Demo() {
 func Example_Demo2() {
 	collection1 := New(`{"status":"success","data":{"resultType":"vector","result":[{"metric":{"__name__":"node_memory_MemAvailable_bytes","instance":"192.168.14.102:9100","job":"linux"},"value":[1620999810.899,"1"]},{"metric":{"__name__":"node_memory_MemAvailable_bytes","instance":"192.168.14.146:9100","job":"linux"},"value":[1620999810.899,"3"]},{"metric":{"__name__":"node_memory_MemAvailable_bytes","instance":"192.168.21.163:9100","job":"linux"},"value":[1620999810.899,"2"]},{"metric":{"__name__":"node_memory_MemAvailable_bytes","instance":"192.168.21.174:9100","job":"linux"},"value":[1620999810.899,"19626115072"]},{"metric":{"__name__":"node_memory_MemAvailable_bytes","instance":"localhost:9100","job":"linux"},"value":[1620999810.899,"3252543488"]},{"metric":{"__name__":"node_memory_MemTotal_bytes","instance":"192.168.14.102:9100","job":"linux"},"value":[1620999810.899,"8203091968"]},{"metric":{"__name__":"node_memory_MemTotal_bytes","instance":"192.168.14.146:9100","job":"linux"},"value":[1620999810.899,"8203091968"]},{"metric":{"__name__":"node_memory_MemTotal_bytes","instance":"192.168.21.163:9100","job":"linux"},"value":[1620999810.899,"8202657792"]},{"metric":{"__name__":"node_memory_MemTotal_bytes","instance":"192.168.21.174:9100","job":"linux"},"value":[1620999810.899,"25112969216"]},{"metric":{"__name__":"node_memory_MemTotal_bytes","instance":"localhost:9100","job":"linux"},"value":[1620999810.899,"3972988928"]}]}}`)
 	result := collection1.Get("data.result")
-	result.Map(func(key []byte, bytes []byte) []byte {
+	result.Map(func(key []byte, c *Collect) Node {
 		val := New("{}")
-		val.Set("timestamp", Get(bytes, "value[0]"))
-		val.Set("value", Get(bytes, "value[1]"))
+		val.Set("timestamp", c.Get("value[0]"))
+		val.Set("value", c.Get("value[1]"))
 		ret := New("{}")
-		ret.Set(string(Get(bytes, "metric.__name__")), val.raw)
-		ret.Set("instance", Get(bytes, "metric.instance"))
-		return ret.raw
+		ret.Set(c.Get("metric.__name__").String(), val)
+		ret.Set("instance", c.Get("metric.instance"))
+		return ret
 	})
 
-	ret, _ := MergeBy(result.raw, "instance") //node_memory_MemTotal_bytes
+	ret, _ := MergeBy(result.Raw(), "instance") //node_memory_MemTotal_bytes
 
 	MemAvailable := func(p1, p2 *Collect) bool {
-		return bytes.Compare(p1.Get("node_memory_MemAvailable_bytes.value").raw, p2.Get("node_memory_MemAvailable_bytes.value").raw) > 0
+		return bytes.Compare(p1.Get("node_memory_MemAvailable_bytes.value").Raw(), p2.Get("node_memory_MemAvailable_bytes.value").Raw()) > 0
 	}
 	MemTotal := func(p1, p2 *Collect) bool {
-		return bytes.Compare(p1.Get("node_memory_MemTotal_bytes.value").raw, p2.Get("node_memory_MemTotal_bytes.value").raw) < 0
+		return bytes.Compare(p1.Get("node_memory_MemTotal_bytes.value").Raw(), p2.Get("node_memory_MemTotal_bytes.value").Raw()) < 0
 	}
 
 	sorted := newCollect(ret)
 	sorted.SortBy(MemTotal)
 	sorted.SortBy(MemAvailable)
-	fmt.Println(string(sorted.raw))
+	fmt.Println(string(sorted.Raw()))
 
 	// Output:
 	// [{"node_memory_MemAvailable_bytes":{"timestamp":1620999810.899,"value":"3252543488"},"instance":"localhost:9100","node_memory_MemTotal_bytes":{"timestamp":1620999810.899,"value":"3972988928"}},{"node_memory_MemAvailable_bytes":{"timestamp":1620999810.899,"value":"3"},"instance":"192.168.14.146:9100","node_memory_MemTotal_bytes":{"timestamp":1620999810.899,"value":"8203091968"}},{"node_memory_MemAvailable_bytes":{"timestamp":1620999810.899,"value":"2"},"instance":"192.168.21.163:9100","node_memory_MemTotal_bytes":{"timestamp":1620999810.899,"value":"8202657792"}},{"node_memory_MemAvailable_bytes":{"timestamp":1620999810.899,"value":"19626115072"},"instance":"192.168.21.174:9100","node_memory_MemTotal_bytes":{"timestamp":1620999810.899,"value":"25112969216"}},{"node_memory_MemAvailable_bytes":{"timestamp":1620999810.899,"value":"1"},"instance":"192.168.14.102:9100","node_memory_MemTotal_bytes":{"timestamp":1620999810.899,"value":"8203091968"}}]
 }
 
-func Example_AAA() {
-
-	fmt.Println(gjson.Get(string(rawArray), "0"))
-	fmt.Println(gjson.Get(string(`["Mohamed Salah", 11]`), "0"))
-
-	// Output:
-	// {"v":{"cv":1}}
-	//Mohamed Salah
-}
+//func Example_AAA() {
+//
+//	fmt.Println(gjson.Get(string(rawArray), "0"))
+//	fmt.Println(gjson.Get(string(`["Mohamed Salah", 11]`), "0"))
+//
+//	// Output:
+//	// {"v":{"cv":1}}
+//	//Mohamed Salah
+//}

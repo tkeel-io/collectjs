@@ -1,8 +1,6 @@
 package collectjs
 
-import (
-	"sort"
-)
+import "sort"
 
 // A couple of type definitions to make the units clear.
 type earthMass float64

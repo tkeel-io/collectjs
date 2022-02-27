@@ -13,6 +13,7 @@ require (
 	github.com/mailru/easyjson v0.7.7
 	github.com/mreiferson/go-ujson v0.0.0-20200614021406-c02629f4935e
 	github.com/pquerna/ffjson v0.0.0-20190930134022-aa0246cd15f7
+	github.com/stretchr/testify v1.7.0
 	github.com/tidwall/match v1.1.1
 	github.com/tidwall/pretty v1.2.0
 )
